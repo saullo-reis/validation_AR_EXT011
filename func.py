@@ -3,7 +3,7 @@ import json
 import logging
 
 from fdk import response
-from src.validations import (
+from src.mandatory.validations import (
     verify_fields_mandatories_organization,
     verify_fields_mandatories_account,
     verify_fields_mandatories_address,
@@ -25,7 +25,8 @@ def handler(ctx, data: io.BytesIO = None):
             for account in org.get("Account", []):
                 messages_error.extend(verify_fields_mandatories_account(account))
                 compliance = account.get("Compliance", {})
-                messages_error.extend(verify_fields_mandatories_compliance(compliance))
+                if compliance:
+                    messages_error.extend(verify_fields_mandatories_compliance(compliance))
                 for address in account.get("Address", []):
                     messages_error.extend(verify_fields_mandatories_address(address))
                 for profile in account.get("CustomerProfile", []):

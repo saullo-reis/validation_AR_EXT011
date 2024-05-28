@@ -1,4 +1,4 @@
-from src.mandatory_fields import (
+from src.mandatory.mandatory_fields import (
     FIELDS_MANDATORIES_ORGANIZATION,
     FIELDS_MANDATORIES_ACCOUNT,
     FIELDS_MANDATORIES_COMPLIANCE,
