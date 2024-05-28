@@ -17,7 +17,8 @@ from src.mandatory.validations import (
 
 from src.lookup.validations import (
     verify_lookups_organization,
-    verify_lookups_account
+    verify_lookups_account,
+    verify_lookups_compliance
 )
 
 
@@ -35,6 +36,7 @@ def handler(ctx, data: io.BytesIO = None):
                 compliance = account.get("Compliance", {})
                 if compliance:
                     messages_error.extend(verify_fields_mandatories_compliance(compliance))
+                    messages_error.extend(verify_lookups_compliance(compliance))
                 for address in account.get("Address", []):
                     messages_error.extend(verify_fields_mandatories_address(address))
                 for profile in account.get("CustomerProfile", []):

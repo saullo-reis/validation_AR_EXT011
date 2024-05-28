@@ -41,9 +41,9 @@ def verify_lookups_organization(organization):
     return messages_error
 
 def verify_lookups_account(account):
-    threads = []
     messages_error = []
     results = [None] * 6
+    
     object_data_lookups = [
         {"lookup": "AJ_SETNAME"},
         {"lookup": "AJ_MEMBER_PERSON"},
@@ -53,12 +53,22 @@ def verify_lookups_account(account):
         {"lookup": "AJ_CARRIER_ID"}
     ]
     
+    account_fields = [
+        ("SetName", "AJ_SETNAME", 0),
+        ("Vendedor", "AJ_MEMBER_PERSON", 1),
+        ("CondicionesDeFlete", "AJ_FREIGHT_TERMS", 2),
+        ("CustomerClassCode", "CUSTOMER CLASS", 3),
+        ("GrupoClientes", "PRICE_G_CLIENTES", 4),
+        ("TipoDeTransporte", "AJ_CARRIER_ID", 5)
+    ]
+    
     def request(data_lookups, index):
         response = requests.post(url, json=data_lookups, headers=headers)
         response_json = response.json()
         values = response_json.get("values", [])
         results[index] = values
     
+    threads = []
     for i, object_datas in enumerate(object_data_lookups):
         thread = threading.Thread(target=request, args=(object_datas, i))
         threads.append(thread)
@@ -66,36 +76,42 @@ def verify_lookups_account(account):
     
     for thread in threads:
         thread.join()
-    
-    account_set_name = account.get("SetName")
-    setname_result = results[0]
-    if setname_result and account_set_name not in setname_result:
-        messages_error.append(f"El valor '{account_set_name}' no existe en la lista de valores de SetName.")
         
-    account_vendedor = account.get("Vendedor")
-    vendedor_result = results[1]
-    if vendedor_result and account_vendedor not in vendedor_result:
-        messages_error.append(f"El valor '{account_vendedor}' no existe en la lista de valores de Vendedor.")
-    
-    condicion_de_flete = account.get("CondicionesDeFlete")
-    condicion_de_flete_result = results[2]
-    if condicion_de_flete_result and condicion_de_flete not in condicion_de_flete_result:
-        messages_error.append(f"El valor '{condicion_de_flete}' no existe en la lista de valores de CondicionesDeFlete.")
-        
-    customer_class_account = account.get("CustomerClassCode")
-    customer_class_result = results[3]
-    if customer_class_result and customer_class_account not in customer_class_result:
-        messages_error.append(f"El valor '{customer_class_account}' no existe en la lista de valores de CustomerClassCode.")
-        
-    group_clientes_account = account.get("GrupoClientes")
-    group_clientes_result = results[4]
-    if group_clientes_result and group_clientes_account in group_clientes_result:
-        messages_error.append(f"El valor '{group_clientes_account}' no existe en la lista de valores de GrupoClientes.")
-        
-    tipo_transporte_account = account.get("TipoDeTransporte")
-    tipo_transporte_result = results[5]
-    if tipo_transporte_result and tipo_transporte_account in tipo_transporte_result:
-        messages_error.append(f"El valor '{tipo_transporte_account}' no existe en la lista de valores de TipoDeTransporte.")
+    for field, lookup, index in account_fields:
+        account_value = account.get(field)
+        lookup_result = results[index]
+        if account_value is not None and lookup_result and account_value not in lookup_result:
+            messages_error.append(f"El valor '{account_value}' no existe en la lista de valores de {field}.")
     
     return messages_error
     
+
+def verify_lookups_compliance(compliance):
+    messages_error = []
+
+    def verify_si_or_no(value, field):
+        if value not in ["SI", "NO"]:
+            messages_error.append(f"{value} no existe en la lista de valores de {field}")
+
+    fields_to_check_si_no = [
+        "PersonaExpuestaPublicamente",
+        "VinculosConAlguienQueLaboreEnAjoverDarnel",
+        "ContrataConElEstado",
+        "ManejaRecursosPublicos",
+        "CalificacionRiesgosTercero",
+        "VinculoConUnaPersonaExpuestaPublicamente",
+        "VigiladoSuperCiedades",
+        "Otros",
+        "MonedaExtranjera"
+    ]
+
+    for field in fields_to_check_si_no:
+        value = compliance.get(field)
+        if value:
+            verify_si_or_no(value, field)
+
+    sistemaSeguridadAcreditado = compliance.get("SistemaSeguridadAcreditado")
+    if sistemaSeguridadAcreditado and sistemaSeguridadAcreditado not in ["BASC", "CEA", "NA"]:
+        messages_error.append(f"{sistemaSeguridadAcreditado} no existe en la lista de valores de SistemaSeguridadAcreditado")
+    
+    return messages_error
