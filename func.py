@@ -15,6 +15,12 @@ from src.mandatory.validations import (
     verify_fields_mandatories_phone
 )
 
+from src.lookup.validations import (
+    verify_lookups_organization,
+    verify_lookups_account
+)
+
+
 def handler(ctx, data: io.BytesIO = None):
     try:
         body = json.loads(data.getvalue())
@@ -22,8 +28,10 @@ def handler(ctx, data: io.BytesIO = None):
         
         for org in body.get("Organization", []):
             messages_error.extend(verify_fields_mandatories_organization(org))
+            messages_error.extend(verify_lookups_organization(org))
             for account in org.get("Account", []):
                 messages_error.extend(verify_fields_mandatories_account(account))
+                messages_error.extend(verify_lookups_account(account))
                 compliance = account.get("Compliance", {})
                 if compliance:
                     messages_error.extend(verify_fields_mandatories_compliance(compliance))
