@@ -1,10 +1,18 @@
 import requests
 import threading
+from dotenv import load_dotenv
+import os
+
+current_directory = os.path.dirname(__file__)
+dotenv_path = os.path.abspath(os.path.join(current_directory, '..', '..', '.env'))
+load_dotenv(dotenv_path)
 
 lookup = ""
 state = ""
 country = ""
 url = "https://oic-ajover-desarrollo-axyh19yueizn-ia.integration.ocp.oraclecloud.com/ic/api/integration/v1/flows/rest/ERP_AR_EXT011_LOOKUP_VALUES/1.0/getLookups"
+auth = os.getenv("AUTH")
+
 
 data = {
     "lookup": lookup,
@@ -13,7 +21,7 @@ data = {
 }
 
 headers = {
-    "Authorization" : "Basic SURSVXNlcjoqQWpvdmVyMjAyM2Qq"
+    "Authorization" : auth
 }
 
 def verify_lookups_organization(organization):
@@ -113,5 +121,51 @@ def verify_lookups_compliance(compliance):
     sistemaSeguridadAcreditado = compliance.get("SistemaSeguridadAcreditado")
     if sistemaSeguridadAcreditado and sistemaSeguridadAcreditado not in ["BASC", "CEA", "NA"]:
         messages_error.append(f"{sistemaSeguridadAcreditado} no existe en la lista de valores de SistemaSeguridadAcreditado")
+    return messages_error
+
+def verify_lookups_address(address):
+    messages_error = []
+    results = [None] * 5
+    
+    object_data_lookups = [
+        {"lookup":"PAISES"},
+        {"lookup":"AJ_STATE", "country": "CO"},
+        {"lookup":"AJ_CITY", "state": "RJ"},
+        {"lookup":"AJ_LANGUAGES"},
+        {"lookup":"SITE_USE_CODE"}
+    ]
+    
+    address_fields = [
+        ("Country", "PAISES", 0),
+        ("Province", "AJ_STATE", 1),
+        ("City", "AJ_CITY", 2),
+        ("Language", "AJ_LANGUAGES", 3),
+        ("SiteUseCode", "SITE_USE_CODE", 4),
+    ]
+    
+    def request(data_lookups, index):
+        response = requests.post(url, json=data_lookups, headers=headers)
+        response_json = response.json()
+        values = response_json.get("values", [])
+        results[index] = values
+    
+    threads = []
+    for i, object_datas in enumerate(object_data_lookups):
+        if object_datas.get("country") and object_datas.get("country") == "CO":
+            object_datas["country"] = address["Country"]
+        if object_datas.get("state") and object_datas.get("state") == "RJ":
+            object_datas["state"] = address["Province"]
+        thread = threading.Thread(target=request, args=(object_datas, i))
+        threads.append(thread)
+        thread.start()
+    
+    for thread in threads:
+        thread.join()
+        
+    for field, lookup, index in address_fields:
+        address_value = address.get(field)
+        lookup_result = results[index]
+        if address_value is not None and lookup_result and address_value not in lookup_result:
+            messages_error.append(f"El valor '{address_value}' no existe en la lista de valores de {field}.")
     
     return messages_error

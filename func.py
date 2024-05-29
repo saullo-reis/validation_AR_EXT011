@@ -18,7 +18,8 @@ from src.mandatory.validations import (
 from src.lookup.validations import (
     verify_lookups_organization,
     verify_lookups_account,
-    verify_lookups_compliance
+    verify_lookups_compliance,
+    verify_lookups_address
 )
 
 
@@ -39,6 +40,7 @@ def handler(ctx, data: io.BytesIO = None):
                     messages_error.extend(verify_lookups_compliance(compliance))
                 for address in account.get("Address", []):
                     messages_error.extend(verify_fields_mandatories_address(address))
+                    messages_error.extend(verify_lookups_address(address))
                 for profile in account.get("CustomerProfile", []):
                     messages_error.extend(verify_fields_mandatories_profile(profile))
                 for contact in account.get("Contact", []):
