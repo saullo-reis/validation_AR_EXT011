@@ -20,7 +20,9 @@ from src.lookup.validations import (
     verify_lookups_account,
     verify_lookups_compliance,
     verify_lookups_address,
-    verify_lookups_contact
+    verify_lookups_contact,
+    verify_lookups_profile,
+    verify_lookups_contact_point
 )
 
 
@@ -48,10 +50,12 @@ def handler(ctx, data: io.BytesIO = None):
                     
                 for profile in account.get("CustomerProfile", []):
                     messages_error.extend(verify_fields_mandatories_profile(profile))
+                    messages_error.extend(verify_lookups_profile(profile))
                     
                 for contact in account.get("Contact", []):
                     messages_error.extend(verify_lookups_contact(contact))
                     for contact_points in contact.get("ContactPoint"):
+                        messages_error.extend(verify_lookups_contact_point(contact_points))
                         type_contact = contact_points.get("ContactPointType")
                         if(type_contact == "PHONE"):
                             messages_error.extend(verify_fields_mandatories_phone(contact_points))

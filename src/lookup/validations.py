@@ -216,3 +216,151 @@ def verify_lookups_contact(contact):
             messages_error.append(f"El valor '{contact_value}' no existe en la lista de valores de {field}.")
     
     return messages_error
+
+def verify_lookups_profile(profile):
+    messages_error = []
+    results = [None] * 6
+    
+    object_data_lookups = [
+        {"lookup":"AJ_CURRENCY_CODE"},
+        {"lookup":"AR_CMGT_CREDIT_CLASSIFICATION"},
+        {"lookup":"AJ_PAYMENT_TERMS"},
+        {"lookup":"RISK_CODE"},
+        {"lookup":"AJ_GROUP_RULES"},
+        {"lookup":"AJ_HOLD_REASON"}
+    ]
+    
+    profile_fields = [
+        ("CreditCurrencyCode", "AJ_CURRENCY_CODE", 0),
+        ("CreditClassificationValue", "AR_CMGT_CREDIT_CLASSIFICATION", 1),
+        ("PaymentTerms", "AJ_PAYMENT_TERMS", 2),
+        ("RiskCodeValue", "RISK_CODE", 3),
+        ("GroupingRule", "AJ_GROUP_RULES", 4),
+        ("MotivoRetencion", "AJ_HOLD_REASON", 5)
+    ]
+    
+    def request(data_lookups, index):
+        response = requests.post(url, json=data_lookups, headers=headers)
+        response_json = response.json()
+        values = response_json.get("values", [])
+        results[index] = values
+    
+    threads = []
+    for i, object_datas in enumerate(object_data_lookups):
+        
+        thread = threading.Thread(target=request, args=(object_datas, i))
+        threads.append(thread)
+        thread.start()
+    
+    for thread in threads:
+        thread.join()
+        
+    for field, lookup, index in profile_fields:
+        profile_value = profile.get(field)
+        lookup_result = results[index]
+        if profile_value is not None and lookup_result and profile_value not in lookup_result:
+            messages_error.append(f"El valor '{profile_value}' no existe en la lista de valores de {field}.")
+    
+    return messages_error
+
+def verify_lookups_profile(profile):
+    messages_error = []
+    results = [None] * 6
+    
+    object_data_lookups = [
+        {"lookup":"AJ_CURRENCY_CODE"},
+        {"lookup":"AR_CMGT_CREDIT_CLASSIFICATION"},
+        {"lookup":"AJ_PAYMENT_TERMS"},
+        {"lookup":"RISK_CODE"},
+        {"lookup":"AJ_GROUP_RULES"},
+        {"lookup":"AJ_HOLD_REASON"}
+    ]
+    
+    profile_fields = [
+        ("CreditCurrencyCode", "AJ_CURRENCY_CODE", 0),
+        ("CreditClassificationValue", "AR_CMGT_CREDIT_CLASSIFICATION", 1),
+        ("PaymentTerms", "AJ_PAYMENT_TERMS", 2),
+        ("RiskCodeValue", "RISK_CODE", 3),
+        ("GroupingRule", "AJ_GROUP_RULES", 4),
+        ("MotivoRetencion", "AJ_HOLD_REASON", 5)
+    ]
+    
+    def request(data_lookups, index):
+        response = requests.post(url, json=data_lookups, headers=headers)
+        response_json = response.json()
+        values = response_json.get("values", [])
+        results[index] = values
+    
+    threads = []
+    for i, object_datas in enumerate(object_data_lookups):
+        
+        thread = threading.Thread(target=request, args=(object_datas, i))
+        threads.append(thread)
+        thread.start()
+    
+    for thread in threads:
+        thread.join()
+        
+    for field, lookup, index in profile_fields:
+        profile_value = profile.get(field)
+        lookup_result = results[index]
+        if profile_value is not None and lookup_result and profile_value not in lookup_result:
+            messages_error.append(f"El valor '{profile_value}' no existe en la lista de valores de {field}.")
+    
+    return messages_error
+
+def verify_lookups_contact_point(contact_point):
+    messages_error = []
+    results = [None] * 7
+    
+    object_data_lookups = [
+        {"lookup":"COMMUNICATION_TYPE"},
+        {"lookup":"PHONE_LINE_TYPE"},
+        {"lookup":"CONTACT_POINT_PURPOSE"},
+        {"lookup":"AJ_PHONE_COUNTRY"},
+        {"lookup":"HZ_INSTANT_MESSENGER_TYPE"},
+        {"lookup":"EMAIL_FORMAT"},
+        {"lookup":"HZ_URL_TYPES"}
+    ]
+    
+    contact_point_fields = [
+        ("ContactPointType", "COMMUNICATION_TYPE", 0),
+        ("PhoneType", "PHONE_LINE_TYPE", 1),
+        ("ContactPurpose", "CONTACT_POINT_PURPOSE", 2),
+        ("PhoneCountryCode", "AJ_PHONE_COUNTRY", 3),
+        ("SocialNetworkName", "HZ_INSTANT_MESSENGER_TYPE", 4),
+        ("EmailFormat", "EMAIL_FORMAT", 5),
+        ("Protocol", "HZ_URL_TYPES", 6)
+    ]
+
+    
+    def request(data_lookups, index):
+        response = requests.post(url, json=data_lookups, headers=headers)
+        response_json = response.json()
+        values = response_json.get("values", [])
+        results[index] = values
+    
+    threads = []
+    for i, object_datas in enumerate(object_data_lookups):
+        
+        thread = threading.Thread(target=request, args=(object_datas, i))
+        threads.append(thread)
+        thread.start()
+    
+    for thread in threads:
+        thread.join()
+        
+    for field, lookup, index in contact_point_fields:
+        contact_point_value = contact_point.get(field)
+        lookup_result = results[index]
+        if contact_point_value is not None and lookup_result and contact_point_value not in lookup_result:
+            messages_error.append(f"El valor '{contact_point_value}' no existe en la lista de valores de {field}.")
+    
+    phonePurpose = contact_point.get("PhonePurpose")
+    emailPurpose = contact_point.get("EmailPurpose")
+    socialNetworkPurpose = contact_point.get("SocialNetworkPurpose")
+    webPurpose = contact_point.get("WebPurpose")
+    if phonePurpose not in results[2] and emailPurpose not in results[2] and socialNetworkPurpose not in results[2] and webPurpose not in ["HOMEPAGE","RSS_FEED","BOT"]:
+        messages_error.append(f"El valor del 'Contact Purpose' no existe en la lista de valores.")
+    
+    return messages_error
