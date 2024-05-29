@@ -169,3 +169,50 @@ def verify_lookups_address(address):
             messages_error.append(f"El valor '{address_value}' no existe en la lista de valores de {field}.")
     
     return messages_error
+
+def verify_lookups_contact(contact):
+    messages_error = []
+    results = [None] * 3
+    
+    object_data_lookups = [
+        {"lookup":"ORA_PSC_CC_CONTACT_TITLE"},
+        {"lookup":"RESPONSIBILITY"},
+        {"lookup":"SITE_USE_CODE"}
+    ]
+    
+    contact_fields = [
+        ("SalutoryIntroduction", "ORA_PSC_CC_CONTACT_TITLE", 0),
+        ("JobTitleCode", "RESPONSIBILITY", 1),
+        ("TipoResponsabilidad", "SITE_USE_CODE", 2)
+    ]
+    
+    def request(data_lookups, index):
+        response = requests.post(url, json=data_lookups, headers=headers)
+        response_json = response.json()
+        values = response_json.get("values", [])
+        results[index] = values
+    
+    threads = []
+    for i, object_datas in enumerate(object_data_lookups):
+        
+        thread = threading.Thread(target=request, args=(object_datas, i))
+        threads.append(thread)
+        thread.start()
+    
+    for thread in threads:
+        thread.join()
+        
+    for field, lookup, index in contact_fields:
+        if field == 'TipoResponsabilidad':
+            responsability = contact.get("Responsabilities")
+            tiporesponsability = responsability[0].get(field)
+            lookup_result = results[index]
+            if contact_value is not None and lookup_result and tiporesponsability not in lookup_result:
+                messages_error.append(f"El valor '{tiporesponsability}' no existe en la lista de valores de {field}.")
+            continue
+        contact_value = contact.get(field)
+        lookup_result = results[index]
+        if contact_value is not None and lookup_result and contact_value not in lookup_result:
+            messages_error.append(f"El valor '{contact_value}' no existe en la lista de valores de {field}.")
+    
+    return messages_error

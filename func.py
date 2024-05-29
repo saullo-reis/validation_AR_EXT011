@@ -19,7 +19,8 @@ from src.lookup.validations import (
     verify_lookups_organization,
     verify_lookups_account,
     verify_lookups_compliance,
-    verify_lookups_address
+    verify_lookups_address,
+    verify_lookups_contact
 )
 
 
@@ -31,19 +32,25 @@ def handler(ctx, data: io.BytesIO = None):
         for org in body.get("Organization", []):
             messages_error.extend(verify_fields_mandatories_organization(org))
             messages_error.extend(verify_lookups_organization(org))
+            
             for account in org.get("Account", []):
                 messages_error.extend(verify_fields_mandatories_account(account))
                 messages_error.extend(verify_lookups_account(account))
+                
                 compliance = account.get("Compliance", {})
                 if compliance:
                     messages_error.extend(verify_fields_mandatories_compliance(compliance))
                     messages_error.extend(verify_lookups_compliance(compliance))
+                    
                 for address in account.get("Address", []):
                     messages_error.extend(verify_fields_mandatories_address(address))
                     messages_error.extend(verify_lookups_address(address))
+                    
                 for profile in account.get("CustomerProfile", []):
                     messages_error.extend(verify_fields_mandatories_profile(profile))
+                    
                 for contact in account.get("Contact", []):
+                    messages_error.extend(verify_lookups_contact(contact))
                     for contact_points in contact.get("ContactPoint"):
                         type_contact = contact_points.get("ContactPointType")
                         if(type_contact == "PHONE"):
