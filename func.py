@@ -1,7 +1,7 @@
 import io
 import json
 import logging
-
+from concurrent.futures import ThreadPoolExecutor
 from fdk import response
 from src.mandatory.validations import (
     verify_fields_mandatories_organization,
@@ -25,11 +25,24 @@ from src.lookup.validations import (
     verify_lookups_contact_point
 )
 
+from src.lookup.lookup_fields import (
+    contact_points_lookup,
+    account_lookup,
+    address_lookup,
+    contact_lookup,
+    profile_lookup
+)
 
 def handler(ctx, data: io.BytesIO = None):
     try:
         body = json.loads(data.getvalue())
         messages_error = []
+        
+        with ThreadPoolExecutor() as executor:
+            contact_points_lookup_result = executor.submit(contact_points_lookup).result()
+            account_lookup_result = executor.submit(account_lookup).result()
+            contact_lookup_result = executor.submit(contact_lookup).result()
+            profile_lookup_result = executor.submit(profile_lookup).result()
         
         for org in body.get("Organization", []):
             messages_error.extend(verify_fields_mandatories_organization(org))
@@ -37,7 +50,7 @@ def handler(ctx, data: io.BytesIO = None):
             
             for account in org.get("Account", []):
                 messages_error.extend(verify_fields_mandatories_account(account))
-                messages_error.extend(verify_lookups_account(account))
+                messages_error.extend(verify_lookups_account(account, account_lookup_result))
                 
                 compliance = account.get("Compliance", {})
                 if compliance:
@@ -46,16 +59,16 @@ def handler(ctx, data: io.BytesIO = None):
                     
                 for address in account.get("Address", []):
                     messages_error.extend(verify_fields_mandatories_address(address))
-                    messages_error.extend(verify_lookups_address(address))
+                    messages_error.extend(verify_lookups_address(address, address_lookup(address)))
                     
                 for profile in account.get("CustomerProfile", []):
                     messages_error.extend(verify_fields_mandatories_profile(profile))
-                    messages_error.extend(verify_lookups_profile(profile))
+                    messages_error.extend(verify_lookups_profile(profile, profile_lookup_result))
                     
                 for contact in account.get("Contact", []):
-                    messages_error.extend(verify_lookups_contact(contact))
+                    messages_error.extend(verify_lookups_contact(contact, contact_lookup_result))
                     for contact_points in contact.get("ContactPoint"):
-                        messages_error.extend(verify_lookups_contact_point(contact_points))
+                        messages_error.extend(verify_lookups_contact_point(contact_points, contact_points_lookup_result))
                         type_contact = contact_points.get("ContactPointType")
                         if(type_contact == "PHONE"):
                             messages_error.extend(verify_fields_mandatories_phone(contact_points))
